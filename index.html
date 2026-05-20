@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STOJO • Controle de Estoque Escolar</title>
+  <style>
+    :root{--bg:#f7faf8;--card:#fff;--text:#1e293b;--muted:#64748b;--brand:#4ea47b;--line:#e2e8f0}
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    aside{background:#fff;border-right:1px solid var(--line);padding:20px;position:sticky;top:0;height:100vh}
+    .logo{font-size:24px;font-weight:700;color:var(--brand)}
+    nav button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:10px;margin:6px 0;color:#334155;cursor:pointer}
+    nav button.active,nav button:hover{background:#ecfdf5;color:#166534}
+    main{padding:24px}
+    .hidden{display:none}
+    .grid{display:grid;gap:16px}
+    .kpis{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+    .card{background:var(--card);padding:16px;border-radius:14px;box-shadow:0 8px 24px rgba(15,23,42,.06);border:1px solid #eef2f7}
+    h1,h2{margin:0 0 8px}
+    .muted{color:var(--muted);font-size:14px}
+    .table{width:100%;border-collapse:collapse;font-size:14px}
+    .table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left}
+    input,select,textarea,button.primary{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+    .row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .primary{background:var(--brand);color:#fff;border:0;cursor:pointer;font-weight:600}
+    .tag{padding:4px 8px;border-radius:99px;font-size:12px;background:#f1f5f9}
+    .catalogo{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+    .produto img{width:100%;height:140px;object-fit:cover;border-radius:10px;background:#f8fafc}
+    .galeria{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+    .galeria img{width:100%;height:90px;object-fit:cover;border-radius:8px;border:2px solid transparent;cursor:pointer}
+    .galeria img.sel{border-color:var(--brand)}
+    .status{font-size:12px;padding:4px 8px;border-radius:99px}
+    @media (max-width: 900px){.app{grid-template-columns:1fr}aside{height:auto;position:static}.row,.row3{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="logo">STOJO</div>
+    <p class="muted">Estoque escolar SaaS</p>
+    <label class="muted">Perfil ativo</label>
+    <select id="perfil">
+      <option>Administrador</option><option>Almoxarifado</option><option>Professora</option><option>Coordenação</option>
+    </select>
+    <nav id="menu"></nav>
+  </aside>
+  <main>
+    <section id="login" class="page">
+      <div class="card" style="max-width:420px;margin:auto">
+        <h1>Bem-vinda ao STOJO</h1><p class="muted">Faça login para acessar o estoque da sua escola.</p>
+        <div class="grid"><input placeholder="E-mail"/><input placeholder="Senha" type="password"/><button class="primary">Entrar</button><button>Esqueci minha senha</button></div>
+      </div>
+    </section>
+    <section id="dashboard" class="page hidden"></section>
+    <section id="materiais" class="page hidden"></section>
+    <section id="catalogo" class="page hidden"></section>
+    <section id="solicitacoes" class="page hidden"></section>
+    <section id="aprovacoes" class="page hidden"></section>
+    <section id="estoque" class="page hidden"></section>
+    <section id="relatorios" class="page hidden"></section>
+    <section id="multiescola" class="page hidden"></section>
+    <section id="auditoria" class="page hidden"></section>
+  </main>
+</div>
+<script>
+const categorias=["Papelaria","Artes","Pedagógico","Limpeza","Brinquedos","Escritório","Tecnologia","Outros"];
+const materiais=[{nome:"Cola Bastão Pritt Henkel 40g",categoria:"Papelaria",qtd:18,min:20,un:"un",local:"A1",cod:"MAT-001",foto:"https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=600"},{nome:"Caderno Brochura",categoria:"Pedagógico",qtd:95,min:30,un:"un",local:"B3",cod:"MAT-002",foto:"https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600"}];
+const pedidos=[{prof:"Marina",turma:"3º Ano A",obs:"Projeto de artes",data:"20/05/2026",status:"Pendente"}];
+const movs=[{material:"Cola Bastão",tipo:"Saída",qtd:4,user:"Almoxarifado",data:"20/05/2026 10:40",obs:"Pedido #102"}];
+const perm={Administrador:["*"],Almoxarifado:["dashboard","materiais","aprovacoes","estoque","auditoria"],Professora:["dashboard","catalogo","solicitacoes"],"Coordenação":["dashboard","aprovacoes","relatorios","auditoria"]}
+const pages=["login","dashboard","materiais","catalogo","solicitacoes","aprovacoes","estoque","relatorios","multiescola","auditoria"];
+const menu=document.getElementById('menu');
+function can(p){const r=perfil.value;return perm[r].includes('*')||perm[r].includes(p)||p==='login'}
+function go(id){pages.forEach(p=>document.getElementById(p).classList.toggle('hidden',p!==id));[...menu.children].forEach(b=>b.classList.toggle('active',b.dataset.page===id))}
+function drawMenu(){menu.innerHTML='';pages.forEach(p=>{if(!can(p))return;const b=document.createElement('button');b.textContent=p[0].toUpperCase()+p.slice(1);b.dataset.page=p;b.onclick=()=>go(p);menu.appendChild(b)})}
+perfil.onchange=drawMenu;drawMenu();go('login');
+
+dashboard.innerHTML=`<h1>Dashboard</h1><p class='muted'>Visão geral da escola • America/Sao_Paulo</p><div class='grid kpis'>
+${[['Materiais cadastrados',materiais.length],['Total em estoque',materiais.reduce((a,b)=>a+b.qtd,0)],['Pedidos pendentes',pedidos.filter(p=>p.status==='Pendente').length],['Pedidos aprovados',2],['Estoque baixo',materiais.filter(m=>m.qtd<=m.min).length]].map(k=>`<div class='card'><div class='muted'>${k[0]}</div><h2>${k[1]}</h2></div>`).join('')}
+</div><div class='grid' style='grid-template-columns:2fr 1fr;margin-top:16px'><div class='card'><h2>Consumo semanal</h2><div style='height:150px;background:linear-gradient(180deg,#dcfce7,#fff);border-radius:10px;display:flex;align-items:end;gap:8px;padding:12px'>${[40,64,55,74,62,38,69].map(v=>`<div style='background:#4ea47b;width:14%;height:${v}%;border-radius:6px'></div>`).join('')}</div></div><div class='card'><h2>Últimas movimentações</h2>${movs.map(m=>`<p>${m.material} <span class='tag'>${m.tipo}</span><br><span class='muted'>${m.data}</span></p>`).join('')}</div></div>`;
+
+materiais.innerHTML=`<h1>Materiais</h1><div class='card'><div class='row3'><input id='nome' placeholder='Nome do material'/><select id='cat'>${categorias.map(c=>`<option>${c}</option>`)}</select><input id='qtd' type='number' placeholder='Quantidade disponível'/></div><div class='row3'><input placeholder='Estoque mínimo'/><input placeholder='Unidade de medida (un, caixa, litro)'/><input placeholder='Localização no estoque'/></div><div class='row3'><input placeholder='Código interno'/><input placeholder='Descrição'/><input type='file' accept='image/*' capture='environment'/></div><p class='muted'>QR Code preparado para uso futuro (campo reservado).</p><div class='row'><input id='buscaImg' placeholder='Digite o nome do produto para buscar imagem'/><button class='primary' onclick='buscarImagem()'>Buscar imagem</button></div><div id='galeria' class='galeria'></div><button class='primary' style='margin-top:10px'>Salvar material</button></div>`;
+window.buscarImagem=async()=>{const q=(document.getElementById('buscaImg').value||'')+' produto escolar fundo branco';const imgs=[`https://source.unsplash.com/featured/300x200/?${encodeURIComponent(q)}`,`https://source.unsplash.com/featured/301x200/?${encodeURIComponent(q)}`,`https://source.unsplash.com/featured/302x200/?${encodeURIComponent(q)}`];galeria.innerHTML=imgs.map(i=>`<img src='${i}' onclick='sel(this)'/>`).join('')}
+window.sel=(img)=>{document.querySelectorAll('.galeria img').forEach(i=>i.classList.remove('sel'));img.classList.add('sel')}
+
+catalogo.innerHTML=`<h1>Catálogo de materiais</h1><div class='row3'><input placeholder='Buscar por nome'/><select>${categorias.map(c=>`<option>${c}</option>`)}</select><select><option>Ordenar: Nome</option><option>Maior estoque</option><option>Menor estoque</option></select></div><div class='grid catalogo' style='margin-top:12px'>${materiais.map(m=>`<div class='card produto'><img src='${m.foto}'/><h3>${m.nome}</h3><p class='muted'>${m.categoria} • ${m.qtd} ${m.un}</p><button class='primary'>Solicitar</button></div>`).join('')}</div><p class='muted'>Paginação: 1 de 1</p>`;
+solicitacoes.innerHTML=`<h1>Solicitação de materiais</h1><div class='card'><div class='row3'><input value='Professora Ana Souza'/><input placeholder='Turma/Série'/><input value='20/05/2026'/></div><textarea placeholder='Observação'></textarea><h3>Carrinho</h3><table class='table'><tr><th>Material</th><th>Qtd</th><th>Status</th></tr><tr><td>Cola Bastão</td><td>4</td><td><span class='status' style='background:#fef9c3'>Em aprovação</span></td></tr></table><button class='primary'>Enviar solicitação</button></div>`;
+aprovacoes.innerHTML=`<h1>Aprovação de pedidos</h1><div class='card'><table class='table'><tr><th>Professora</th><th>Turma</th><th>Status</th><th>Ação</th></tr>${pedidos.map(p=>`<tr><td>${p.prof}</td><td>${p.turma}</td><td>${p.status}</td><td><button>Aprovar</button> <button>Rejeitar</button> <button>Separar</button></td></tr>`).join('')}</table><p class='muted'>Regra: bloqueia solicitação quando quantidade > estoque disponível e exibe alerta visual.</p></div>`;
+estoque.innerHTML=`<h1>Controle de estoque</h1><div class='card'><div class='row3'><select><option>Entrada</option><option>Saída</option><option>Ajuste manual</option></select><input placeholder='Quantidade'/><input placeholder='Observação'/></div><button class='primary' style='margin-top:10px'>Registrar movimentação</button><h3>Histórico</h3><table class='table'><tr><th>Material</th><th>Tipo</th><th>Qtd</th><th>Responsável</th><th>Data/Hora</th><th>Observação</th></tr>${movs.map(m=>`<tr><td>${m.material}</td><td>${m.tipo}</td><td>${m.qtd}</td><td>${m.user}</td><td>${m.data}</td><td>${m.obs}</td></tr>`).join('')}</table></div>`;
+relatorios.innerHTML=`<h1>Relatórios</h1><div class='grid kpis'>${['Consumo por professora','Consumo por turma','Consumo por categoria','Materiais mais utilizados','Estoque baixo','Histórico movimentações','Pedidos por período','Custos por categoria'].map(r=>`<div class='card'><h3>${r}</h3><p class='muted'>Exportável em PDF/CSV.</p></div>`).join('')}</div>`;
+multiescola.innerHTML=`<h1>Multi-escola</h1><div class='card'><p>Arquitetura pronta para múltiplas escolas com isolamento lógico por <b>school_id</b> em usuários, materiais, pedidos, movimentações e auditoria.</p></div>`;
+auditoria.innerHTML=`<h1>Auditoria</h1><div class='card'><table class='table'><tr><th>Usuário</th><th>Ação</th><th>Data/Hora</th></tr><tr><td>coord@escola.br</td><td>Aprovou pedido #102</td><td>20/05/2026 11:03</td></tr><tr><td>estoque@escola.br</td><td>Baixa automática de estoque</td><td>20/05/2026 11:08</td></tr><tr><td>ana@escola.br</td><td>Login realizado</td><td>20/05/2026 09:02</td></tr></table></div>`;
+</script>
+</body>
+</html>
